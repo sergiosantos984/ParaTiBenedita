@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Tiny Play World 🎮</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --sky: #7EC8E3;
+    --sun: #FFD93D;
+    --grass: #6BCB77;
+    --coral: #FF6B6B;
+    --purple: #A855F7;
+    --orange: #FF9F43;
+    --bg: #FFF8F0;
+    --card: #FFFFFF;
+    --text: #2D2D2D;
+    --radius: 28px;
+  }
+
+  body {
+    font-family: 'Nunito', 'Rounded Mplus 1c', 'Comic Sans MS', system-ui, sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    touch-action: manipulation;
+  }
+
+  /* ── HOME SCREEN ── */
+  #home {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 40px;
+    min-height: 100dvh;
+  }
+
+  .home-header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .home-title {
+    font-size: clamp(2rem, 8vw, 3rem);
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--coral), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+
+  .home-sub {
+    font-size: 1.1rem;
+    color: #888;
+    font-weight: 700;
+  }
+
+  .games-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .game-btn {
+    background: var(--card);
+    border: none;
+    border-radius: var(--radius);
+    padding: 22px 12px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    transition: transform 0.15s, box-shadow 0.15s;
+    -webkit-user-select: none;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .game-btn:active { transform: scale(0.93); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+  .game-btn .emoji { font-size: 3rem; line-height: 1; }
+  .game-btn .label {
+    font-size: 1rem;
+    font-weight: 900;
+    color: var(--text);
+    text-align: center;
+  }
+
+  .game-btn.c1 { background: linear-gradient(145deg, #FFF0F0, #FFE4E4); }
+  .game-btn.c2 { background: linear-gradient(145deg, #F0F8FF, #E0F0FF); }
+  .game-btn.c3 { background: linear-gradient(145deg, #F0FFF4, #DCF5E4); }
+  .game-btn.c4 { background: linear-gradient(145deg, #FFF8E1, #FFF0C0); }
+  .game-btn.c5 { background: linear-gradient(145deg, #F5F0FF, #EDE0FF); }
+  .game-btn.c6 { background: linear-gradient(145deg, #FFF0F8, #FFE0F0); }
+
+  /* ── GAME SCREEN ── */
+  .game-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100dvh;
+    padding: 0;
+  }
+
+  .game-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(255,248,240,0.95);
+    backdrop-filter: blur(8px);
+  }
+
+  .back-btn {
+    background: var(--card);
+    border: none;
+    border-radius: 50%;
+    width: 52px; height: 52px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .back-btn:active { transform: scale(0.9); }
+
+  .score-badge {
+    background: var(--sun);
+    border-radius: 50px;
+    padding: 8px 18px;
+    font-weight: 900;
+    font-size: 1.1rem;
+    color: #6B4000;
+    box-shadow: 0 2px 8px rgba(255,180,0,0.3);
+  }
+
+  .game-body {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 20px 40px;
+    gap: 20px;
+  }
+
+  /* ── COLOR GAME ── */
+  .color-target {
+    width: min(200px, 55vw);
+    height: min(200px, 55vw);
+    border-radius: 50%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+  }
+  .color-target.bounce {
+    animation: bounce 0.4s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes bounce {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+
+  .question-label {
+    font-size: clamp(1.4rem, 5vw, 1.8rem);
+    font-weight: 900;
+    color: var(--text);
+    text-align: center;
+  }
+
+  .color-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    width: 100%;
+    max-width: 380px;
+  }
+
+  .color-option {
+    height: min(90px, 22vw);
+    border-radius: 20px;
+    border: 4px solid white;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    transition: transform 0.12s, box-shadow 0.12s;
+  }
+  .color-option:active { transform: scale(0.9); }
+  .color-option.correct {
+    animation: correctPop 0.5s cubic-bezier(.34,1.56,.64,1);
+    border-color: #00E676;
+  }
+  .color-option.wrong {
+    animation: shake 0.4s;
+    border-color: #FF5252;
+  }
+  @keyframes correctPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+
+  /* ── ANIMAL GAME ── */
+  .animal-display {
+    font-size: clamp(6rem, 28vw, 9rem);
+    line-height: 1;
+    cursor: pointer;
+    animation: floatAnim 3s ease-in-out infinite;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));
+    user-select: none;
+  }
+  @keyframes floatAnim {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+
+  .animal-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    width: 100%;
+    max-width: 380px;
+  }
+
+  .animal-option {
+    background: white;
+    border: 3px solid #EEE;
+    border-radius: 20px;
+    padding: 16px 8px;
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: var(--text);
+    cursor: pointer;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+    transition: transform 0.12s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .animal-option span:first-child { font-size: 2.2rem; }
+  .animal-option:active { transform: scale(0.92); }
+  .animal-option.correct { border-color: #00E676; background: #E8FFF0; }
+  .animal-option.wrong { border-color: #FF5252; background: #FFF0F0; animation: shake 0.4s; }
+
+  /* ── BALLOON GAME ── */
+  .balloon-area {
+    width: 100%;
+    max-width: 420px;
+    height: min(380px, 60vw);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .balloon {
+    position: absolute;
+    font-size: clamp(3.5rem, 13vw, 5.5rem);
+    cursor: pointer;
+    animation: riseUp linear forwards;
+    user-select: none;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+  }
+  .balloon:active { transform: scale(1.3); }
+  @keyframes riseUp {
+    from { bottom: -80px; opacity: 1; }
+    to { bottom: 110%; opacity: 0.6; }
+  }
+  .balloon.pop {
+    animation: popAnim 0.3s forwards !important;
+  }
+  @keyframes popAnim {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.8); opacity: 0.5; }
+    100% { transform: scale(0); opacity: 0; }
+  }
+
+  /* ── SHAPE GAME ── */
+  .shape-display svg {
+    width: min(180px, 50vw);
+    height: min(180px, 50vw);
+    filter: drop-shadow(0 6px 16px rgba(0,0,0,0.15));
+  }
+
+  .shape-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    width: 100%;
+    max-width: 380px;
+  }
+  .shape-option {
+    background: white;
+    border: 3px solid #EEE;
+    border-radius: 20px;
+    padding: 16px 8px 12px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: var(--text);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+    transition: transform 0.12s;
+  }
+  .shape-option svg { width: 56px; height: 56px; }
+  .shape-option:active { transform: scale(0.92); }
+  .shape-option.correct { border-color: #00E676; background: #E8FFF0; }
+  .shape-option.wrong { border-color: #FF5252; background: #FFF0F0; animation: shake 0.4s; }
+
+  /* ── NUMBER GAME ── */
+  .number-display {
+    font-size: clamp(6rem, 28vw, 10rem);
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--coral), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+  .dots-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    max-width: 280px;
+  }
+  .dot {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--coral);
+    box-shadow: 0 3px 8px rgba(255,100,100,0.4);
+  }
+  .number-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+    max-width: 380px;
+  }
+  .number-option {
+    background: white;
+    border: 3px solid #EEE;
+    border-radius: 20px;
+    padding: 18px 8px;
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--text);
+    cursor: pointer;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+    transition: transform 0.12s;
+    text-align: center;
+  }
+  .number-option:active { transform: scale(0.92); }
+  .number-option.correct { border-color: #00E676; background: #E8FFF0; }
+  .number-option.wrong { border-color: #FF5252; background: #FFF0F0; animation: shake 0.4s; }
+
+  /* ── FRUIT GAME ── */
+  .fruit-display { font-size: clamp(6rem, 28vw, 9rem); line-height: 1; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15)); }
+  .fruit-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    width: 100%;
+    max-width: 380px;
+  }
+  .fruit-option {
+    background: white;
+    border: 3px solid #EEE;
+    border-radius: 20px;
+    padding: 16px 8px;
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: var(--text);
+    cursor: pointer;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+    transition: transform 0.12s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .fruit-option span:first-child { font-size: 2.5rem; }
+  .fruit-option:active { transform: scale(0.92); }
+  .fruit-option.correct { border-color: #00E676; background: #E8FFF0; }
+  .fruit-option.wrong { border-color: #FF5252; background: #FFF0F0; animation: shake 0.4s; }
+
+  /* ── FEEDBACK OVERLAY ── */
+  #feedback-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  #feedback-overlay.show { opacity: 1; pointer-events: all; }
+  #feedback-overlay .feedback-emoji {
+    font-size: clamp(5rem, 28vw, 9rem);
+    animation: popIn 0.4s cubic-bezier(.34,1.56,.64,1);
+  }
+  #feedback-overlay .feedback-text {
+    font-size: clamp(1.8rem, 7vw, 2.5rem);
+    font-weight: 900;
+    color: white;
+    text-shadow: 0 3px 12px rgba(0,0,0,0.3);
+    margin-top: 12px;
+    animation: popIn 0.4s 0.05s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  #feedback-overlay.correct-bg { background: radial-gradient(circle, rgba(0,200,100,0.92), rgba(0,150,70,0.92)); }
+  #feedback-overlay.wrong-bg { background: radial-gradient(circle, rgba(255,80,80,0.88), rgba(200,30,30,0.88)); }
+  @keyframes popIn {
+    from { transform: scale(0.3); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  /* ── STARS RAIN ── */
+  .star-particle {
+    position: fixed;
+    pointer-events: none;
+    font-size: 2rem;
+    z-index: 200;
+    animation: starFall 1s ease-in forwards;
+  }
+  @keyframes starFall {
+    0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translateY(60px) rotate(360deg) scale(0); opacity: 0; }
+  }
+
+  /* ── GAME TITLE DISPLAY ── */
+  .game-title-display {
+    font-size: clamp(1.3rem, 5vw, 1.7rem);
+    font-weight: 900;
+    color: var(--text);
+  }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="home">
+  <div class="home-header">
+    <div class="home-title">🌈 Tiny Play World</div>
+    <div class="home-sub">Pick a game! 👇</div>
+  </div>
+  <div class="games-grid">
+    <button class="game-btn c1" onclick="startGame('colors')">
+      <span class="emoji">🎨</span>
+      <span class="label">Colours</span>
+    </button>
+    <button class="game-btn c2" onclick="startGame('animals')">
+      <span class="emoji">🐶</span>
+      <span class="label">Animals</span>
+    </button>
+    <button class="game-btn c3" onclick="startGame('balloons')">
+      <span class="emoji">🎈</span>
+      <span class="label">Balloons</span>
+    </button>
+    <button class="game-btn c4" onclick="startGame('numbers')">
+      <span class="emoji">🔢</span>
+      <span class="label">Numbers</span>
+    </button>
+    <button class="game-btn c5" onclick="startGame('shapes')">
+      <span class="emoji">🔺</span>
+      <span class="label">Shapes</span>
+    </button>
+    <button class="game-btn c6" onclick="startGame('fruits')">
+      <span class="emoji">🍎</span>
+      <span class="label">Fruits</span>
+    </button>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen" class="game-screen">
+  <div class="game-header">
+    <button class="back-btn" onclick="goHome()">🏠</button>
+    <div class="game-title-display" id="game-title"></div>
+    <div class="score-badge">⭐ <span id="score">0</span></div>
+  </div>
+  <div class="game-body" id="game-body"></div>
+</div>
+
+<!-- FEEDBACK -->
+<div id="feedback-overlay">
+  <div class="feedback-emoji" id="feedback-emoji"></div>
+  <div class="feedback-text" id="feedback-text"></div>
+</div>
+
+<script>
+// ── AUDIO (Web Audio API – no files needed) ──
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+
+function playTone(freq, dur, type='sine', vol=0.3) {
+  try {
+    const o = AC.createOscillator();
+    const g = AC.createGain();
+    o.connect(g); g.connect(AC.destination);
+    o.type = type;
+    o.frequency.setValueAtTime(freq, AC.currentTime);
+    g.gain.setValueAtTime(vol, AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + dur);
+    o.start(); o.stop(AC.currentTime + dur);
+  } catch(e) {}
+}
+
+function playSuccess() {
+  [523, 659, 784, 1047].forEach((f,i) => setTimeout(() => playTone(f, 0.2, 'sine', 0.25), i*80));
+}
+function playWrong() {
+  playTone(220, 0.3, 'sawtooth', 0.2);
+}
+function playTap() {
+  playTone(600, 0.08, 'sine', 0.15);
+}
+function playPop() {
+  playTone(800, 0.05, 'triangle', 0.3);
+  setTimeout(() => playTone(400, 0.1, 'triangle', 0.2), 50);
+}
+
+// ── STATE ──
+let score = 0;
+let currentGame = null;
+let canAnswer = true;
+
+function goHome() {
+  playTap();
+  document.getElementById('home').style.display = 'flex';
+  document.getElementById('game-screen').style.display = 'none';
+  currentGame = null;
+}
+
+function setScore(n) {
+  score = n;
+  document.getElementById('score').textContent = n;
+}
+
+function startGame(name) {
+  playTap();
+  if (AC.state === 'suspended') AC.resume();
+  score = 0;
+  setScore(0);
+  currentGame = name;
+  document.getElementById('home').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'flex';
+  const titles = { colors:'🎨 Colours', animals:'🐶 Animals', balloons:'🎈 Balloons', numbers:'🔢 Numbers', shapes:'🔺 Shapes', fruits:'🍎 Fruits' };
+  document.getElementById('game-title').textContent = titles[name];
+  canAnswer = true;
+  renderGame(name);
+}
+
+function renderGame(name) {
+  const body = document.getElementById('game-body');
+  body.innerHTML = '';
+  if (name === 'colors') renderColors(body);
+  else if (name === 'animals') renderAnimals(body);
+  else if (name === 'balloons') renderBalloons(body);
+  else if (name === 'numbers') renderNumbers(body);
+  else if (name === 'shapes') renderShapes(body);
+  else if (name === 'fruits') renderFruits(body);
+}
+
+// ── FEEDBACK ──
+function showFeedback(correct, messages) {
+  const overlay = document.getElementById('feedback-overlay');
+  const emoji = document.getElementById('feedback-emoji');
+  const text = document.getElementById('feedback-text');
+  const correctEmojis = ['🎉','⭐','🌟','🥳','💫','🎊'];
+  const wrongEmojis = ['😊','💪','🤗','👍'];
+  emoji.textContent = correct
+    ? correctEmojis[Math.floor(Math.random()*correctEmojis.length)]
+    : wrongEmojis[Math.floor(Math.random()*wrongEmojis.length)];
+  text.textContent = correct
+    ? ['Amazing!','Well done!','Brilliant!','Super!','Fantastic!','Yes!'][Math.floor(Math.random()*6)]
+    : ['Try again!','So close!','Keep going!'][Math.floor(Math.random()*3)];
+  overlay.className = 'show ' + (correct ? 'correct-bg' : 'wrong-bg');
+  if (correct) spawnStars();
+  setTimeout(() => {
+    overlay.className = '';
+    if (currentGame) renderGame(currentGame);
+    canAnswer = true;
+  }, correct ? 1200 : 900);
+}
+
+function spawnStars() {
+  const emojis = ['⭐','🌟','✨','💫'];
+  for (let i = 0; i < 8; i++) {
+    setTimeout(() => {
+      const s = document.createElement('div');
+      s.className = 'star-particle';
+      s.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+      s.style.left = (Math.random() * 90 + 5) + 'vw';
+      s.style.top = (Math.random() * 60 + 10) + 'vh';
+      document.body.appendChild(s);
+      setTimeout(() => s.remove(), 1000);
+    }, i * 80);
+  }
+}
+
+function onAnswer(correct, el, cls) {
+  if (!canAnswer) return;
+  canAnswer = false;
+  playTap();
+  if (correct) {
+    playSuccess();
+    el.classList.add('correct');
+    setScore(score + 1);
+  } else {
+    playWrong();
+    el.classList.add('wrong');
+  }
+  setTimeout(() => showFeedback(correct), 300);
+}
+
+// ── COLOURS ──
+const COLORS = [
+  { name: 'Red',    hex: '#FF4444' },
+  { name: 'Blue',   hex: '#4488FF' },
+  { name: 'Green',  hex: '#44CC66' },
+  { name: 'Yellow', hex: '#FFD700' },
+  { name: 'Orange', hex: '#FF8C00' },
+  { name: 'Pink',   hex: '#FF69B4' },
+  { name: 'Purple', hex: '#9B59B6' },
+  { name: 'Teal',   hex: '#20B2AA' },
+];
+
+function renderColors(body) {
+  const shuffled = [...COLORS].sort(() => Math.random()-0.5);
+  const options = shuffled.slice(0,4);
+  const target = options[Math.floor(Math.random()*4)];
+
+  const circle = document.createElement('div');
+  circle.className = 'color-target';
+  circle.style.background = target.hex;
+
+  const label = document.createElement('div');
+  label.className = 'question-label';
+  label.textContent = '🎨 Tap this colour!';
+
+  const grid = document.createElement('div');
+  grid.className = 'color-options';
+
+  options.forEach(c => {
+    const btn = document.createElement('div');
+    btn.className = 'color-option';
+    btn.style.background = c.hex;
+    btn.onclick = () => onAnswer(c.name === target.name, btn, 'color-option');
+    grid.appendChild(btn);
+  });
+
+  body.appendChild(circle);
+  body.appendChild(label);
+  body.appendChild(grid);
+}
+
+// ── ANIMALS ──
+const ANIMALS = [
+  { emoji:'🐶', name:'Dog' }, { emoji:'🐱', name:'Cat' },
+  { emoji:'🐸', name:'Frog' }, { emoji:'🐮', name:'Cow' },
+  { emoji:'🐷', name:'Pig' }, { emoji:'🦊', name:'Fox' },
+  { emoji:'🐻', name:'Bear' }, { emoji:'🐯', name:'Tiger' },
+  { emoji:'🦁', name:'Lion' }, { emoji:'🐼', name:'Panda' },
+  { emoji:'🐨', name:'Koala' }, { emoji:'🦋', name:'Butterfly' },
+];
+
+function renderAnimals(body) {
+  const shuffled = [...ANIMALS].sort(() => Math.random()-0.5);
+  const options = shuffled.slice(0,4);
+  const target = options[Math.floor(Math.random()*4)];
+
+  const display = document.createElement('div');
+  display.className = 'animal-display';
+  display.textContent = target.emoji;
+  display.onclick = () => { playTap(); display.style.transform='scale(1.2)'; setTimeout(()=>display.style.transform='',200); };
+
+  const label = document.createElement('div');
+  label.className = 'question-label';
+  label.textContent = '🐾 What animal is this?';
+
+  const grid = document.createElement('div');
+  grid.className = 'animal-options';
+  options.forEach(a => {
+    const btn = document.createElement('div');
+    btn.className = 'animal-option';
+    btn.innerHTML = `<span>${a.emoji}</span><span>${a.name}</span>`;
+    btn.onclick = () => onAnswer(a.name === target.name, btn, 'animal-option');
+    grid.appendChild(btn);
+  });
+
+  body.appendChild(display);
+  body.appendChild(label);
+  body.appendChild(grid);
+}
+
+// ── BALLOONS ──
+const BALLOON_EMOJIS = ['🔴','🟠','🟡','🟢','🔵','🟣','🎈','🫧'];
+let balloonInterval = null;
+let balloonCount = 0;
+let balloonTarget = 10;
+
+function renderBalloons(body) {
+  balloonCount = 0;
+  balloonTarget = 10;
+
+  const instruction = document.createElement('div');
+  instruction.className = 'question-label';
+  instruction.textContent = '🎈 Pop all the balloons!';
+
+  const counter = document.createElement('div');
+  counter.style.cssText = 'font-size:1.2rem;font-weight:900;color:#888;';
+  counter.id = 'balloon-counter';
+  counter.textContent = `0 / ${balloonTarget}`;
+
+  const area = document.createElement('div');
+  area.className = 'balloon-area';
+  area.id = 'balloon-area';
+
+  body.appendChild(instruction);
+  body.appendChild(counter);
+  body.appendChild(area);
+
+  function spawnBalloon() {
+    if (!document.getElementById('balloon-area')) return;
+    const b = document.createElement('div');
+    b.className = 'balloon';
+    const emojis = ['🎈','🎈','🎈','🎈','🎈','🎈'];
+    const colors = ['🔴','🟠','🟡','🟢','🔵','🟣'];
+    b.textContent = [...emojis,...colors][Math.floor(Math.random()*12)];
+    const left = 5 + Math.random() * 75;
+    const dur = 3 + Math.random() * 3;
+    b.style.left = left + '%';
+    b.style.animationDuration = dur + 's';
+    b.onclick = () => {
+      if (b.classList.contains('pop')) return;
+      b.classList.add('pop');
+      playPop();
+      balloonCount++;
+      const c = document.getElementById('balloon-counter');
+      if (c) c.textContent = `${balloonCount} / ${balloonTarget}`;
+      spawnStars();
+      setScore(score + 1);
+      setTimeout(() => b.remove(), 300);
+      if (balloonCount >= balloonTarget) {
+        clearInterval(balloonInterval);
+        playSuccess();
+        setTimeout(() => showFeedback(true), 400);
+      }
+    };
+    area.appendChild(b);
+    setTimeout(() => { if (b.parentNode) b.remove(); }, dur * 1000);
+  }
+
+  spawnBalloon(); spawnBalloon(); spawnBalloon();
+  balloonInterval = setInterval(spawnBalloon, 1400);
+}
+
+// ── NUMBERS ──
+function renderNumbers(body) {
+  const num = 1 + Math.floor(Math.random() * 9);
+  const options = new Set([num]);
+  while (options.size < 6) {
+    const n = 1 + Math.floor(Math.random() * 9);
+    options.add(n);
+  }
+  const optArr = [...options].sort(() => Math.random()-0.5);
+
+  const numDisplay = document.createElement('div');
+  numDisplay.className = 'number-display';
+  numDisplay.textContent = num;
+
+  const dots = document.createElement('div');
+  dots.className = 'dots-display';
+  for (let i=0;i<num;i++) {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    dots.appendChild(d);
+  }
+
+  const label = document.createElement('div');
+  label.className = 'question-label';
+  label.textContent = '🔢 Tap the number!';
+
+  const grid = document.createElement('div');
+  grid.className = 'number-options';
+  optArr.forEach(n => {
+    const btn = document.createElement('div');
+    btn.className = 'number-option';
+    btn.textContent = n;
+    btn.onclick = () => onAnswer(n === num, btn, 'number-option');
+    grid.appendChild(btn);
+  });
+
+  body.appendChild(numDisplay);
+  body.appendChild(dots);
+  body.appendChild(label);
+  body.appendChild(grid);
+}
+
+// ── SHAPES ──
+const SHAPES = [
+  {
+    name: 'Circle',
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#FF6B6B"/></svg>`
+  },
+  {
+    name: 'Square',
+    svg: `<svg viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" fill="#4488FF" rx="8"/></svg>`
+  },
+  {
+    name: 'Triangle',
+    svg: `<svg viewBox="0 0 100 100"><polygon points="50,8 95,92 5,92" fill="#FFD700"/></svg>`
+  },
+  {
+    name: 'Star',
+    svg: `<svg viewBox="0 0 100 100"><polygon points="50,5 61,35 95,35 68,57 79,91 50,70 21,91 32,57 5,35 39,35" fill="#A855F7"/></svg>`
+  },
+  {
+    name: 'Heart',
+    svg: `<svg viewBox="0 0 100 100"><path d="M50 85 C50 85 10 58 10 35 C10 22 20 13 32 13 C40 13 47 18 50 24 C53 18 60 13 68 13 C80 13 90 22 90 35 C90 58 50 85 50 85Z" fill="#FF69B4"/></svg>`
+  },
+  {
+    name: 'Diamond',
+    svg: `<svg viewBox="0 0 100 100"><polygon points="50,5 95,50 50,95 5,50" fill="#20B2AA"/></svg>`
+  },
+];
+
+function renderShapes(body) {
+  const shuffled = [...SHAPES].sort(() => Math.random()-0.5);
+  const options = shuffled.slice(0,4);
+  const target = options[Math.floor(Math.random()*4)];
+
+  const display = document.createElement('div');
+  display.className = 'shape-display';
+  display.innerHTML = target.svg;
+
+  const label = document.createElement('div');
+  label.className = 'question-label';
+  label.textContent = '🔺 What shape is this?';
+
+  const grid = document.createElement('div');
+  grid.className = 'shape-options';
+  options.forEach(s => {
+    const btn = document.createElement('div');
+    btn.className = 'shape-option';
+    btn.innerHTML = s.svg + `<span>${s.name}</span>`;
+    btn.onclick = () => onAnswer(s.name === target.name, btn, 'shape-option');
+    grid.appendChild(btn);
+  });
+
+  body.appendChild(display);
+  body.appendChild(label);
+  body.appendChild(grid);
+}
+
+// ── FRUITS ──
+const FRUITS = [
+  { emoji:'🍎', name:'Apple' }, { emoji:'🍌', name:'Banana' },
+  { emoji:'🍓', name:'Strawberry' }, { emoji:'🍊', name:'Orange' },
+  { emoji:'🍇', name:'Grapes' }, { emoji:'🍋', name:'Lemon' },
+  { emoji:'🍉', name:'Watermelon' }, { emoji:'🍑', name:'Peach' },
+  { emoji:'🍍', name:'Pineapple' }, { emoji:'🥝', name:'Kiwi' },
+  { emoji:'🍒', name:'Cherry' }, { emoji:'🥭', name:'Mango' },
+];
+
+function renderFruits(body) {
+  const shuffled = [...FRUITS].sort(() => Math.random()-0.5);
+  const options = shuffled.slice(0,4);
+  const target = options[Math.floor(Math.random()*4)];
+
+  const display = document.createElement('div');
+  display.className = 'fruit-display';
+  display.textContent = target.emoji;
+
+  const label = document.createElement('div');
+  label.className = 'question-label';
+  label.textContent = '🍎 What fruit is this?';
+
+  const grid = document.createElement('div');
+  grid.className = 'fruit-options';
+  options.forEach(f => {
+    const btn = document.createElement('div');
+    btn.className = 'fruit-option';
+    btn.innerHTML = `<span>${f.emoji}</span><span>${f.name}</span>`;
+    btn.onclick = () => onAnswer(f.name === target.name, btn, 'fruit-option');
+    grid.appendChild(btn);
+  });
+
+  body.appendChild(display);
+  body.appendChild(label);
+  body.appendChild(grid);
+}
+
+// Clean up balloons on home
+const origGoHome = goHome;
+window.goHome = function() {
+  if (balloonInterval) { clearInterval(balloonInterval); balloonInterval = null; }
+  origGoHome();
+};
+</script>
+</body>
+</html>
